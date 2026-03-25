@@ -5,7 +5,7 @@
 
     <artifactId>keycloak-2fa-email-authenticator</artifactId>
     <groupId>com.mesutpiskin.keycloak</groupId>
-    <version>26.2.0</version>
+    <version>26.3.0</version>
     <modelVersion>4.0.0</modelVersion>
     <packaging>jar</packaging>
 
@@ -14,13 +14,13 @@
         <java.version>21</java.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
-        <keycloak.version>26.5.3</keycloak.version>
+        <keycloak.version>26.5.6</keycloak.version>
         <sendgrid.version>4.10.3</sendgrid.version>
-        <aws-sdk.version>2.30.31</aws-sdk.version>
-        <junit-jupiter.version>5.11.4</junit-jupiter.version>
-        <mockito.version>5.15.2</mockito.version>
-        <maven-surefire.plugin.version>3.5.2</maven-surefire.plugin.version>
-        <maven-jar.plugin.version>3.4.2</maven-jar.plugin.version>
+        <aws-sdk.version>2.42.13</aws-sdk.version>
+        <junit-jupiter.version>5.14.3</junit-jupiter.version>
+        <mockito.version>5.23.0</mockito.version>
+        <maven-surefire.plugin.version>3.5.5</maven-surefire.plugin.version>
+        <maven-jar.plugin.version>3.5.0</maven-jar.plugin.version>
     </properties>
 
     <dependencyManagement>
