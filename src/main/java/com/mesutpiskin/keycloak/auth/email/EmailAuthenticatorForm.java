@@ -23,6 +23,8 @@ import org.keycloak.credential.CredentialProvider;
 import org.jboss.logging.Logger;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
+
+import java.security.MessageDigest;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -275,8 +277,9 @@ public class EmailAuthenticatorForm extends AbstractUsernameFormAuthenticator
             return false;
         }
 
-        if (codeContext.submittedCode().equals(codeContext.storedCode()))
+        if (MessageDigest.isEqual(codeContext.submittedCode().getBytes(), codeContext.storedCode().getBytes())) {
             return true;
+        }
 
         context.getEvent().user(user).error(Errors.INVALID_USER_CREDENTIALS);
 
