@@ -39,13 +39,7 @@ final class OtpHashUtils {
      * @throws IllegalStateException if {@value #HASH_ALGORITHM} is unexpectedly unavailable
      */
     static String hash(String code) {
-        try {
-            MessageDigest digest = MessageDigest.getInstance(HASH_ALGORITHM);
-            byte[] hashBytes = digest.digest(code.getBytes(StandardCharsets.UTF_8));
-            return HexFormat.of().formatHex(hashBytes);
-        } catch (NoSuchAlgorithmException e) {
-            throw new IllegalStateException(HASH_ALGORITHM + " algorithm not available", e);
-        }
+        return HexFormat.of().formatHex(digestBytes(code));
     }
 
     /**
