@@ -23,6 +23,7 @@ import org.keycloak.credential.CredentialProvider;
 import org.jboss.logging.Logger;
 import jakarta.ws.rs.core.MultivaluedMap;
 import jakarta.ws.rs.core.Response;
+
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -137,7 +138,8 @@ public class EmailAuthenticatorForm extends AbstractUsernameFormAuthenticator
         } else {
             sendEmailWithCode(context, code, ttl);
         }
-        session.setAuthNote(EmailConstants.CODE, code);
+
+        session.setAuthNote(EmailConstants.CODE, OtpHashUtils.hash(code));
         long now = System.currentTimeMillis();
         session.setAuthNote(EmailConstants.CODE_TTL, Long.toString(now + (ttl * 1000L)));
         session.setAuthNote(EmailConstants.CODE_RESEND_AVAILABLE_AFTER, Long.toString(now + (resendCooldown * 1000L)));
@@ -275,8 +277,9 @@ public class EmailAuthenticatorForm extends AbstractUsernameFormAuthenticator
             return false;
         }
 
-        if (codeContext.submittedCode().equals(codeContext.storedCode()))
+        if (OtpHashUtils.matches(codeContext.submittedCode(), codeContext.storedCode())) {
             return true;
+        }
 
         context.getEvent().user(user).error(Errors.INVALID_USER_CREDENTIALS);
 
