@@ -5,10 +5,11 @@
     <#elseif section="form">
         <form id="kc-otp-login-form" class="${properties.kcFormClass!}" action="${url.loginAction}"
             method="post">
+            <#assign otpLength = (codeLength!6)>
 
             <div class="${properties.kcFormGroupClass!}">
                 <div class="${properties.kcLabelWrapperClass!}">
-                    <label for="emailCode" class="${properties.kcLabelClass!}">${msg("emailOtpForm")}</label>
+                    <label for="emailCode" class="${properties.kcLabelClass!}">${msg("emailOtpForm", otpLength)}</label>
                 </div>
 
             <div class="${properties.kcInputWrapperClass!}">
