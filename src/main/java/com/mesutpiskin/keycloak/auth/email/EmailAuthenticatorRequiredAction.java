@@ -47,7 +47,28 @@ public class EmailAuthenticatorRequiredAction implements RequiredActionProvider,
 
     @Override
     public void evaluateTriggers(RequiredActionContext context) {
-        // Not needed for self-service setup
+        // When "Skip Setup" is enabled, users with an email are considered configured by default.
+        // Since this authenticator implements CredentialValidator, Keycloak uses the credential store
+        // directly and bypasses configuredFor() — so we must create the credential here to make the
+        // authenticator visible in the flow.
+        Map<String, String> config = findAuthenticatorConfig(context);
+        if (!Boolean.parseBoolean(config.getOrDefault(EmailConstants.SKIP_SETUP, String.valueOf(EmailConstants.DEFAULT_SKIP_SETUP)))) {
+            return;
+        }
+        UserModel user = context.getUser();
+        if (user.getEmail() == null || user.getEmail().isBlank()) {
+            return;
+        }
+        boolean hasCredential = user.credentialManager()
+                .getStoredCredentialsByTypeStream(EmailAuthenticatorCredentialModel.TYPE_ID)
+                .findAny().isPresent();
+        if (hasCredential) {
+            return;
+        }
+        EmailAuthenticatorCredentialModel credential = EmailAuthenticatorCredentialModel.create();
+        credential.setUserLabel(user.getEmail());
+        user.credentialManager().createStoredCredential(credential);
+        logger.infof("Auto-enrolled user %s for Email 2FA (skipSetup enabled)", user.getUsername());
     }
 
     @Override
