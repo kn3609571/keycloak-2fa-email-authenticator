@@ -283,26 +283,31 @@ public class EmailAuthenticatorForm extends AbstractUsernameFormAuthenticator
 
         context.getEvent().user(user).error(Errors.INVALID_USER_CREDENTIALS);
 
-        AuthenticationSessionModel session = context.getAuthenticationSession();
-        int attempts = incrementAttempts(session);
-
-        AuthenticatorConfigModel config = context.getAuthenticatorConfig();
-        Map<String, String> configValues = config != null && config.getConfig() != null
-                ? config.getConfig()
-                : Map.of();
-        int maxAttempts = resolvePositiveInt(configValues, EmailConstants.MAX_ATTEMPTS,
-                EmailConstants.DEFAULT_MAX_ATTEMPTS);
-
-        if (attempts >= maxAttempts) {
-            resetEmailCode(context);
-            LoginFormsProvider form = prepareForm(context, null);
-            form.setAttribute("maxAttemptsReached", true);
-            applyFormMessage(form, "email-authenticator-too-many-attempts", EmailConstants.CODE);
-            Response challengeResponse = form.createForm("email-code-form.ftl");
-            context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, challengeResponse);
-        } else {
+        if (context.getRealm().isBruteForceProtected()) {
             Response challengeResponse = challenge(context, Messages.INVALID_ACCESS_CODE, EmailConstants.CODE);
             context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, challengeResponse);
+        } else {
+            AuthenticationSessionModel session = context.getAuthenticationSession();
+            int attempts = incrementAttempts(session);
+
+            AuthenticatorConfigModel config = context.getAuthenticatorConfig();
+            Map<String, String> configValues = config != null && config.getConfig() != null
+                    ? config.getConfig()
+                    : Map.of();
+            int maxAttempts = resolvePositiveInt(configValues, EmailConstants.MAX_ATTEMPTS,
+                    EmailConstants.DEFAULT_MAX_ATTEMPTS);
+
+            if (attempts >= maxAttempts) {
+                resetEmailCode(context);
+                LoginFormsProvider form = prepareForm(context, null);
+                form.setAttribute("maxAttemptsReached", true);
+                applyFormMessage(form, "email-authenticator-too-many-attempts", EmailConstants.CODE);
+                Response challengeResponse = form.createForm("email-code-form.ftl");
+                context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, challengeResponse);
+            } else {
+                Response challengeResponse = challenge(context, Messages.INVALID_ACCESS_CODE, EmailConstants.CODE);
+                context.failureChallenge(AuthenticationFlowError.INVALID_CREDENTIALS, challengeResponse);
+            }
         }
         return false;
     }
