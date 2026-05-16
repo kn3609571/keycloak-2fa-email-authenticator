@@ -391,7 +391,8 @@ public class EmailAuthenticatorForm extends AbstractUsernameFormAuthenticator
 
     @Override
     public boolean configuredFor(KeycloakSession session, RealmModel realm, UserModel user) {
-        if (getCredentialProvider(session).isConfiguredFor(realm, user, getType(session))) {
+        EmailAuthenticatorCredentialProvider provider = getCredentialProvider(session);
+        if (provider != null && provider.isConfiguredFor(realm, user, getType(session))) {
             return true;
         }
         if (isSkipSetupEnabled(realm)) {
@@ -403,7 +404,8 @@ public class EmailAuthenticatorForm extends AbstractUsernameFormAuthenticator
     private boolean isSkipSetupEnabled(RealmModel realm) {
         return realm.getAuthenticationFlowsStream()
                 .flatMap(flow -> realm.getAuthenticationExecutionsStream(flow.getId()))
-                .filter(exec -> EmailAuthenticatorFormFactory.PROVIDER_ID.equals(exec.getAuthenticator()))
+                .filter(exec -> EmailAuthenticatorFormFactory.PROVIDER_ID.equals(exec.getAuthenticator())
+                        || ConditionalEmailAuthenticatorFormFactory.PROVIDER_ID.equals(exec.getAuthenticator()))
                 .map(exec -> {
                     String configId = exec.getAuthenticatorConfig();
                     if (configId != null) {

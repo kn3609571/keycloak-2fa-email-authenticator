@@ -47,28 +47,9 @@ public class EmailAuthenticatorRequiredAction implements RequiredActionProvider,
 
     @Override
     public void evaluateTriggers(RequiredActionContext context) {
-        // When "Skip Setup" is enabled, users with an email are considered configured by default.
-        // Since this authenticator implements CredentialValidator, Keycloak uses the credential store
-        // directly and bypasses configuredFor() — so we must create the credential here to make the
-        // authenticator visible in the flow.
-        Map<String, String> config = findAuthenticatorConfig(context);
-        if (!Boolean.parseBoolean(config.getOrDefault(EmailConstants.SKIP_SETUP, String.valueOf(EmailConstants.DEFAULT_SKIP_SETUP)))) {
-            return;
-        }
-        UserModel user = context.getUser();
-        if (user.getEmail() == null || user.getEmail().isBlank()) {
-            return;
-        }
-        boolean hasCredential = user.credentialManager()
-                .getStoredCredentialsByTypeStream(EmailAuthenticatorCredentialModel.TYPE_ID)
-                .findAny().isPresent();
-        if (hasCredential) {
-            return;
-        }
-        EmailAuthenticatorCredentialModel credential = EmailAuthenticatorCredentialModel.create();
-        credential.setUserLabel(user.getEmail());
-        user.credentialManager().createStoredCredential(credential);
-        logger.infof("Auto-enrolled user %s for Email 2FA (skipSetup enabled)", user.getUsername());
+        // isConfiguredFor() in EmailAuthenticatorCredentialProvider handles the skipSetup case
+        // (returns true when user has email and skipSetup is enabled), so auto-enrollment
+        // here is not needed and would create unwanted credentials in account management.
     }
 
     @Override
@@ -280,7 +261,8 @@ public class EmailAuthenticatorRequiredAction implements RequiredActionProvider,
 
         return realm.getAuthenticationFlowsStream()
                 .flatMap(flow -> realm.getAuthenticationExecutionsStream(flow.getId()))
-                .filter(exec -> EmailAuthenticatorFormFactory.PROVIDER_ID.equals(exec.getAuthenticator()))
+                .filter(exec -> EmailAuthenticatorFormFactory.PROVIDER_ID.equals(exec.getAuthenticator())
+                        || ConditionalEmailAuthenticatorFormFactory.PROVIDER_ID.equals(exec.getAuthenticator()))
                 .map(exec -> {
                     String configId = exec.getAuthenticatorConfig();
                     if (configId != null) {
