@@ -7,6 +7,7 @@ import org.keycloak.credential.CredentialModel;
 import org.keycloak.credential.CredentialProvider;
 import org.keycloak.credential.CredentialTypeMetadata;
 import org.keycloak.credential.CredentialTypeMetadataContext;
+import org.keycloak.models.AuthenticatorConfigModel;
 import org.keycloak.models.KeycloakSession;
 import org.keycloak.models.RealmModel;
 import org.keycloak.models.UserModel;
@@ -36,10 +37,36 @@ public class EmailAuthenticatorCredentialProvider
         if (!supportsCredentialType(credentialType)) {
             return false;
         }
-        return user.credentialManager()
+        if (user.credentialManager()
                 .getStoredCredentialsByTypeStream(EmailAuthenticatorCredentialModel.TYPE_ID)
                 .findAny()
-                .isPresent();
+                .isPresent()) {
+            return true;
+        }
+        // When skip-setup is enabled, users with an email are considered configured without
+        // explicit enrollment. This enables "Try Another Way" selection and admin-enforced 2FA.
+        return isSkipSetupEnabled(realm) && user.getEmail() != null && !user.getEmail().isBlank();
+    }
+
+    private boolean isSkipSetupEnabled(RealmModel realm) {
+        return realm.getAuthenticationFlowsStream()
+                .flatMap(flow -> realm.getAuthenticationExecutionsStream(flow.getId()))
+                .filter(exec -> EmailAuthenticatorFormFactory.PROVIDER_ID.equals(exec.getAuthenticator())
+                        || ConditionalEmailAuthenticatorFormFactory.PROVIDER_ID.equals(exec.getAuthenticator()))
+                .map(exec -> {
+                    String configId = exec.getAuthenticatorConfig();
+                    if (configId != null) {
+                        AuthenticatorConfigModel config = realm.getAuthenticatorConfigById(configId);
+                        if (config != null && config.getConfig() != null) {
+                            return Boolean.parseBoolean(
+                                    config.getConfig().getOrDefault(EmailConstants.SKIP_SETUP,
+                                            String.valueOf(EmailConstants.DEFAULT_SKIP_SETUP)));
+                        }
+                    }
+                    return EmailConstants.DEFAULT_SKIP_SETUP;
+                })
+                .findFirst()
+                .orElse(EmailConstants.DEFAULT_SKIP_SETUP);
     }
 
     @Override
