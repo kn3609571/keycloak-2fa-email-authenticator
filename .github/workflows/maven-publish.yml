@@ -1,4 +1,4 @@
-# Publishes artifacts to Maven Central and attaches JARs to GitHub Releases.
+# Publishes artifacts to Maven Central + GitHub Packages, attaches JARs to GitHub Releases.
 # Triggered on every GitHub Release (type: released).
 # Requires secrets: CENTRAL_TOKEN_USERNAME, CENTRAL_TOKEN_PASSWORD,
 #                   GPG_SIGNING_KEY, GPG_SIGNING_KEY_PASSWORD
@@ -43,6 +43,9 @@ jobs:
           server-password: MAVEN_PASSWORD
           gpg-private-key: ${{ secrets.GPG_SIGNING_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
+      - name: Add GitHub Packages server to Maven settings
+        run: |
+          sed -i 's|</servers>|<server><id>github</id><username>${env.GITHUB_ACTOR}</username><password>${env.GITHUB_TOKEN}</password></server></servers>|' ~/.m2/settings.xml
       - name: Set version corresponding to Keycloak version
         run: mvn versions:set -DnewVersion=$(git describe --tags | sed 's/^v//')-KC${{ matrix.version }}
       - name: Build and publish to Maven Central
@@ -51,6 +54,10 @@ jobs:
           MAVEN_USERNAME: ${{ secrets.CENTRAL_TOKEN_USERNAME }}
           MAVEN_PASSWORD: ${{ secrets.CENTRAL_TOKEN_PASSWORD }}
           MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_SIGNING_KEY_PASSWORD }}
+      - name: Publish to GitHub Packages
+        run: mvn deploy -P github -DskipTests -Dgpg.skip=true --batch-mode
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
       - name: Attach artifact to release
         uses: softprops/action-gh-release@v2
         with:
